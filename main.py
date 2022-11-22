@@ -5,8 +5,9 @@ from numpy import genfromtxt
 import mediapipe as mp
 from Point import Point
 from Hand import Hand
-from tensorflow.keras.preprocessing import sequence
-from tensorflow.keras.datasets import imdb
+from tensorflow.keras.layers import LSTM, Dropout, Dense
+from tensorflow.keras.models import Sequential
+from keras.utils import to_categorical
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -64,7 +65,6 @@ def record_sign(file_name, class_number):
 
                             hands_list.append(Hand(hand_landmarks, nose_point, image_height, image_width))
 
-
                         data_csv = get_hands_csv(hands_list)
                         file1.write(data_csv + ',' + str(class_number) + '\n')
                     else:
@@ -79,10 +79,9 @@ def record_sign(file_name, class_number):
 
 def get_hands_csv(hands_list):
     hands = []
-    # data = ""
     if len(hands_list) == 1:
         hands.append(hands_list[0].get_timestep_data())
-        zeros = [0]*19
+        zeros = [0] * 19
         hands.append(','.join(str(v) for v in zeros))
     elif len(hands_list) == 2:
         hands.append(hands_list[0].get_timestep_data())
@@ -100,9 +99,9 @@ def generate_training_examples_from_recording(recording_file_name, class_number,
                 if line.rstrip() == "":
                     end_of_file = True
                     if last_line_empty == False:
-                        i=i+1
+                        i = i + 1
                 if end_of_file == False:
-                    file3.write(line.rstrip()+'\n')
+                    file3.write(line.rstrip() + '\n')
                     last_line_empty = False
                 else:
                     file3.close()
@@ -114,31 +113,52 @@ def load_data():
     X_train = []
     Y_train = []
     num_of_classes = 2
-    for i in range(0,num_of_classes):
+    for i in range(0, num_of_classes):
         all_files = os.listdir("data/" + str(i))
         for file in all_files:
-            file_np_array = genfromtxt("data/" + str(i) + "/" + str(file), delimiter=',', usecols=np.arange(0, 76))#.tolist()
+            file_np_array = genfromtxt("data/" + str(i) + "/" + str(file), delimiter=',',
+                                       usecols=np.arange(0, 76)).tolist()
             X_train.append(file_np_array)
-            # X_train[y] = file_np_array
-            # y=y+1
             Y_train.append(i)
-    return np.array(X_train), np.array(Y_train, dtype='float64')
+    return X_train, Y_train
+
 
 def pad_sequence(seq, maxlen):
-    # zeros = [0.0] * 76
-    # for l in seq:
-    for j,s in enumerate(seq):
+    for j, s in enumerate(seq):
         for i in range(maxlen - len(seq[j])):
-            # l.insert(0, zeros)
-             seq[j] = np.insert(seq[j], 0, np.zeros(76), axis=0)
+            seq[j] = np.insert(seq[j], 0, np.zeros(76), axis=0)
     return seq
+
+
+def train_model(trainX, trainY):
+    epochs, batch_size = 15, 5
+    model = Sequential()
+    model.add(LSTM(100, input_shape=(20, 76)))
+    model.add(Dropout(0.5))
+    model.add(Dense(100, activation='relu'))
+    model.add(Dense(2, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # fit network
+    model.fit(trainX, trainY, epochs=epochs, batch_size=batch_size)
+    model.save("model.h5")
+    # evaluate model
+    # _, accuracy = model.evaluate(testX, testy, batch_size=batch_size, verbose=0)
+    return model
 
 if __name__ == '__main__':
     # record_sign(file_name="recording_class_01.csv", class_number=0)
     # generate_training_examples_from_recording(recording_file_name="recording_class_1.csv", class_number=1, start=10)
-    X_train2, Y_train2 = load_data()
-    X_train2 = pad_sequence(X_train2, 20)
 
-    # (X_train, y_train), (X_test, y_test) = imdb.load_data(num_words=5000)
-    # X_train = sequence.pad_sequences(X_train, maxlen=500)
-    print(X_train2)
+    X_train, Y_train = load_data()
+    X_train = pad_sequence(X_train, 20)
+    arr = np.empty([20, 76], dtype='float64') #TODO delete empty sample so tensor is 18,20,76
+    for i in X_train:                         #TODO fix number of features with one hand
+        arr = np.dstack((arr, i))
+    Y_train.append(1.0)
+
+    Y_train = np.array(Y_train, dtype='float64')
+    Y_train = to_categorical(Y_train)
+    arr = np.swapaxes(arr, 0, 2)
+    arr = np.swapaxes(arr, 1, 2)
+
+    model = train_model(arr, Y_train)

@@ -81,7 +81,7 @@ def get_hands_csv(hands_list):
     hands = []
     if len(hands_list) == 1:
         hands.append(hands_list[0].get_timestep_data())
-        zeros = [0] * 19
+        zeros = [0] * 19 * 3
         hands.append(','.join(str(v) for v in zeros))
     elif len(hands_list) == 2:
         hands.append(hands_list[0].get_timestep_data())
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     X_train, Y_train = load_data()
     X_train = pad_sequence(X_train, 20)
     arr = np.empty([20, 76], dtype='float64') #TODO delete empty sample so tensor is 18,20,76
-    for i in X_train:                         #TODO fix number of features with one hand
+    for i in X_train:                         #TODO fix number of features with one hand (line 84)
         arr = np.dstack((arr, i))
     Y_train.append(1.0)
 

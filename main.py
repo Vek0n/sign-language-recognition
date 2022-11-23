@@ -15,8 +15,10 @@ mp_hands = mp.solutions.hands
 mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
 
+SEQUENCE_PADDING = 23
+NUMBER_OF_KEYPOINTS = 114
 
-def record_sign(file_name, class_number):
+def record_sign(file_name):
     cap = cv2.VideoCapture(0)
 
     with mp_hands.Hands(
@@ -66,7 +68,7 @@ def record_sign(file_name, class_number):
                             hands_list.append(Hand(hand_landmarks, nose_point, image_height, image_width))
 
                         data_csv = get_hands_csv(hands_list)
-                        file1.write(data_csv + ',' + str(class_number) + '\n')
+                        file1.write(data_csv + '\n')
                     else:
                         file1.write('\n')
 
@@ -89,18 +91,18 @@ def get_hands_csv(hands_list):
     return ','.join(hands)
 
 
-def generate_training_examples_from_recording(recording_file_name, class_number, start):
+def generate_training_examples_from_recording(recording_file_name, class_number, start, data_type):
     with open(recording_file_name, 'r') as file2:
         end_of_file = False
         last_line_empty = True
         i = start
         for line in file2:
-            with open("data/" + str(class_number) + "/" + str(i) + "_" + str(class_number) + ".txt", 'a') as file3:
+            with open("data/"+ data_type + "/" + str(class_number) + "/" + str(i) + "_" + str(class_number) + ".txt", 'a') as file3:
                 if line.rstrip() == "":
                     end_of_file = True
-                    if last_line_empty == False:
+                    if not last_line_empty:
                         i = i + 1
-                if end_of_file == False:
+                if not end_of_file:
                     file3.write(line.rstrip() + '\n')
                     last_line_empty = False
                 else:
@@ -109,56 +111,66 @@ def generate_training_examples_from_recording(recording_file_name, class_number,
                     last_line_empty = True
 
 
-def load_data():
+def load_data(number_of_classes, data_type):
     X_train = []
     Y_train = []
-    num_of_classes = 2
-    for i in range(0, num_of_classes):
-        all_files = os.listdir("data/" + str(i))
+    for i in range(0, number_of_classes):
+        all_files = os.listdir("data/" + data_type + "/" + str(i))
         for file in all_files:
-            file_np_array = genfromtxt("data/" + str(i) + "/" + str(file), delimiter=',',
-                                       usecols=np.arange(0, 76)).tolist()
+            file_np_array = genfromtxt("data/" + data_type + "/" + str(i) + "/" + str(file), delimiter=',',
+                                       usecols=np.arange(0, NUMBER_OF_KEYPOINTS)).tolist()
             X_train.append(file_np_array)
             Y_train.append(i)
-    return X_train, Y_train
+    return X_train, np.array(Y_train, dtype='float64')
 
 
 def pad_sequence(seq, maxlen):
     for j, s in enumerate(seq):
         for i in range(maxlen - len(seq[j])):
-            seq[j] = np.insert(seq[j], 0, np.zeros(76), axis=0)
-    return seq
+            seq[j] = np.insert(seq[j], 0, np.zeros(NUMBER_OF_KEYPOINTS), axis=0)
+    return reshape_sequence(seq)
 
 
-def train_model(trainX, trainY):
-    epochs, batch_size = 15, 5
-    model = Sequential()
-    model.add(LSTM(100, input_shape=(20, 76)))
-    model.add(Dropout(0.5))
-    model.add(Dense(100, activation='relu'))
-    model.add(Dense(2, activation='softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    # fit network
-    model.fit(trainX, trainY, epochs=epochs, batch_size=batch_size)
-    model.save("model.h5")
-    # evaluate model
-    # _, accuracy = model.evaluate(testX, testy, batch_size=batch_size, verbose=0)
-    return model
-
-if __name__ == '__main__':
-    # record_sign(file_name="recording_class_01.csv", class_number=0)
-    # generate_training_examples_from_recording(recording_file_name="recording_class_1.csv", class_number=1, start=10)
-
-    X_train, Y_train = load_data()
-    X_train = pad_sequence(X_train, 20)
-    arr = np.empty([20, 76], dtype='float64') #TODO delete empty sample so tensor is 18,20,76
-    for i in X_train:                         #TODO fix number of features with one hand (line 84)
+def reshape_sequence(seq):
+    arr = np.empty([SEQUENCE_PADDING, NUMBER_OF_KEYPOINTS], dtype='float64')
+    for i in seq:
         arr = np.dstack((arr, i))
-    Y_train.append(1.0)
-
-    Y_train = np.array(Y_train, dtype='float64')
-    Y_train = to_categorical(Y_train)
     arr = np.swapaxes(arr, 0, 2)
     arr = np.swapaxes(arr, 1, 2)
+    return np.delete(arr, 0, axis=0)
 
-    model = train_model(arr, Y_train)
+
+def train_model(trainX, trainY, testX, testY, epochs, batch_size):
+    model = Sequential()
+    model.add(LSTM(5, input_shape=(SEQUENCE_PADDING, NUMBER_OF_KEYPOINTS)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(10, activation='relu'))
+    model.add(Dense(2, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.fit(trainX, trainY, validation_data=(testX, testY), epochs=epochs, batch_size=batch_size)
+    model.save("model.h5")
+    return model
+
+
+if __name__ == '__main__':
+    # Gather training data
+    # record_sign(file_name="recording_class_3.csv")
+    # generate_training_examples_from_recording(recording_file_name="recording_class_3.csv", class_number=1, start=1, data_type="test")
+
+    # Train model
+    X_train, Y_train = load_data(number_of_classes=2, data_type="train")
+    X_train = pad_sequence(X_train, SEQUENCE_PADDING)
+    Y_train = to_categorical(Y_train)
+
+    X_test, Y_test = load_data(number_of_classes=2, data_type="test")
+    X_test = pad_sequence(X_test, SEQUENCE_PADDING)
+    Y_test = to_categorical(Y_test)
+    model = train_model(X_train, Y_train, X_test, Y_test, epochs=15, batch_size=5)
+
+
+    # Predict model
+    # X_test = [genfromtxt("data/test/1/0_1.txt", delimiter=',',
+    #                      usecols=np.arange(0, NUMBER_OF_KEYPOINTS))]
+    # X_test = pad_sequence(X_test, SEQUENCE_PADDING)
+    # prediction = model.predict(X_test)
+    print("d")

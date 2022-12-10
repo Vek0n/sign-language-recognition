@@ -2,8 +2,8 @@ import cv2
 import mediapipe as mp
 from point import Point
 from hand import Hand
-from tensorflow.keras.layers import LSTM, Dropout, Dense
-from tensorflow.keras.models import Sequential
+from tensorflow.python.keras.layers import LSTM, Dropout, Dense
+from tensorflow.python.keras.models import Sequential
 from keras.utils import to_categorical
 from utils import get_hands_csv
 from utils import pad_sequence

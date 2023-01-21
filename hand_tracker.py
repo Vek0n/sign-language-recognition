@@ -102,7 +102,7 @@ def start(model):
                             last_prediction = time.time()
                         last_frame = False
                         temp.close()
-                        open('data/temp.csv', 'w').close()
+                        # open('data/temp.csv', 'w').close()
 
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 bottomLeftCornerOfText = (500, 650)

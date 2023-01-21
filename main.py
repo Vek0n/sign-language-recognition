@@ -7,7 +7,7 @@ import numpy as np
 from os import listdir
 from os import getcwd
 from matplotlib import pyplot as plt
-from utils import load_data
+from utils import load_data, convert_to_img, convert_to_img_debug
 from numpy import genfromtxt
 from constants import NUMBER_OF_KEYPOINTS
 import os
@@ -97,30 +97,59 @@ import os
 #     return np.delete(arr, 0, axis=0)
 
 
-def load_data(data_type):
+# def load_data(data_type):
+#     X_train = []
+#     Y_train = []
+#     all_files = os.listdir("data/" + data_type + "/2")
+#     for file in all_files:
+#         file_np_array = genfromtxt("data/" + data_type + "/2/" + str(file), delimiter=',',
+#                                    usecols=np.arange(0, NUMBER_OF_KEYPOINTS)).tolist()
+#         X_train.append(file_np_array)
+#     return X_train, np.array(Y_train, dtype='float64')
+
+
+def load_temp_data():
     X_train = []
     Y_train = []
-    all_files = os.listdir("data/" + data_type + "/2")
-    for file in all_files:
-        file_np_array = genfromtxt("data/" + data_type + "/2/" + str(file), delimiter=',',
-                                   usecols=np.arange(0, NUMBER_OF_KEYPOINTS)).tolist()
-        X_train.append(file_np_array)
+    file_np_array = genfromtxt("data/temp.csv", delimiter=',',
+                               usecols=np.arange(0, NUMBER_OF_KEYPOINTS)).tolist()
+    X_train.append(file_np_array)
     return X_train, np.array(Y_train, dtype='float64')
-
 
 if __name__ == '__main__':
     # data = np.zeros((80, 80), dtype=np.uint8)
-    # x_tr, y_tr = load_data("train")
-    # for i in range(20, 30):
-    #     example = x_tr[i]
+    # x_tr, y_tr = load_data(5, "train")
     #
+    # for example in x_tr:
     #     for e in example:
-    #         print((int(e[31] * 80)) + 40, (int(e[32] * 80)) + 40)
-    #         data[(int(e[31] * 80)) + 40, (int(e[32] * 80)) + 40] = 1
+    #         data[(int(e[1] * 80) + 40), (int(e[0] * 80)) + 40] = 1
     #     plt.imshow(data, cmap='gray', vmin=0, vmax=1)
     #     plt.show()
     #     data = np.zeros((80, 80), dtype=np.uint8)
 
+    a = convert_to_img_debug()
+    for j in range(10):
+        xx = a[:, :, j].squeeze()
+        plt.imshow(xx, cmap='gray', vmin=0, vmax=1)
+        plt.show()
+
+
+
+    x_tr, y_tr = convert_to_img_debug(5, "train")
+
+    arr = np.empty([80, 80, 39, 1], dtype='float64')
+    for i in x_tr:
+        i = np.expand_dims(i, axis=3)
+        arr = np.concatenate((arr, i), axis=3)
+        for j in range(10):
+            xx = i[:, :, j].squeeze()
+            plt.imshow(xx, cmap='gray', vmin=0, vmax=1)
+            plt.show()
+
+
+
+
+    print(x_tr[0][0])
     # x_tr, y_tr = load_data("train")
     # x_tst, y_tst = load_data("test")
     #
@@ -169,8 +198,6 @@ if __name__ == '__main__':
     # model.evaluate(x_test, y_test, verbose=1)
 
 
-
-
     # record_sign(file_name="recording_5.csv")
     # record_sign(file_name="recording_5_test.csv")
 
@@ -179,7 +206,9 @@ if __name__ == '__main__':
 
     # train(number_of_classes=5, epochs=5, batch_size=30, model_name="model_test.h5")
 
-    model = tf.keras.models.load_model('models/model.h5')
-    start(model=model)
+    # model = tf.keras.models.load_model('models/model.h5')
+    # start(model=model)
+
+
 
 

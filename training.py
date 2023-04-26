@@ -2,9 +2,9 @@ import cv2
 import mediapipe as mp
 from point import Point
 from hand import Hand
-from tensorflow.python.keras.layers import LSTM, Dropout, Dense
-from tensorflow.python.keras.models import Sequential
-from keras.utils import to_categorical
+from tensorflow.keras.layers import LSTM, Dropout, Dense
+from tensorflow.keras.models import Sequential
+from tensorflow.python.keras.utils.np_utils import to_categorical
 from utils import get_hands_csv
 from utils import pad_sequence
 from utils import load_data
@@ -42,9 +42,9 @@ def record_sign(file_name):
     cap = cv2.VideoCapture(0)
 
     with mp_hands.Hands(
-            model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5) as hands:
+            model_complexity=1,
+            min_detection_confidence=0.75,
+            min_tracking_confidence=0.75) as hands:
         with mp_face_detection.FaceDetection(
                 model_selection=0,
                 min_detection_confidence=0.5) as face_detection:
@@ -99,15 +99,14 @@ def record_sign(file_name):
     cap.release()
 
 
-def __train_model(trainX, trainY, testX, testY, epochs, batch_size):
+def __train_model(trainX, trainY, testX, testY, epochs, batch_size, number_of_classes):
     model = Sequential()
     model.add(LSTM(5, return_sequences=True,
                    input_shape=(SEQUENCE_PADDING, NUMBER_OF_KEYPOINTS)))
     model.add(Dropout(0.2))
     model.add(LSTM(5))
     model.add(Dropout(0.2))
-    # model.add(Dense(10, activation='relu'))
-    model.add(Dense(5, activation='softmax'))
+    model.add(Dense(number_of_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     model.fit(trainX, trainY, validation_data=(testX, testY), epochs=epochs, batch_size=batch_size)
     return model
@@ -123,6 +122,6 @@ def train(number_of_classes, epochs, batch_size, model_name):
     print("Processing test data")
     X_test = pad_sequence(X_test, SEQUENCE_PADDING)
     Y_test = to_categorical(Y_test)
-    model = __train_model(X_train, Y_train, X_test, Y_test, epochs=epochs, batch_size=batch_size)
+    model = __train_model(X_train, Y_train, X_test, Y_test, epochs=epochs, batch_size=batch_size, number_of_classes=number_of_classes)
     model.save("models/" + model_name)
     print("Model saved to " + model_name)

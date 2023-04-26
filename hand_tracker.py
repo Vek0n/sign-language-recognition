@@ -27,6 +27,8 @@ def argmax_to_response(argmax):
         return "Prosze"
     elif argmax == 4:
         return "Widziec"
+    elif argmax == 5:
+        return "Nazwisko"
     return argmax
 
 
@@ -47,8 +49,8 @@ def start(model):
 
     with mp_hands.Hands(
             model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5) as hands:
+            min_detection_confidence=0.75,
+            min_tracking_confidence=0.75) as hands:
         with mp_face_detection.FaceDetection(
                 model_selection=0,
                 min_detection_confidence=0.5) as face_detection:
@@ -97,7 +99,7 @@ def start(model):
                         temp.write(data_csv + '\n')
                         last_frame = True
                     else:
-                        if last_frame == True:
+                        if last_frame:
                             prediction = predict(model)
                             last_prediction = time.time()
                         last_frame = False
@@ -105,7 +107,7 @@ def start(model):
                         open('data/temp.csv', 'w').close()
 
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                bottomLeftCornerOfText = (500, 650)
+                bottomLeftCornerOfText = (160, 450)
                 fontScale = 2
                 fontColor = (255, 255, 255)
                 thickness = 4

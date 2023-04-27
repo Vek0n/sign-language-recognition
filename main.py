@@ -1,16 +1,20 @@
-import tensorflow as tf
-from training import record_sign, train, generate_training_examples_from_recording
-from hand_tracker import start
-from tensorflow import keras
-from tensorflow.keras import layers
+import cv2
 import numpy as np
 from os import listdir
 from os import getcwd
 from matplotlib import pyplot as plt
-from utils import load_data, convert_to_img, convert_to_img_debug
+from PIL import Image
+from tensorflow.python.keras import models
+from tensorflow.python.keras.layers import Conv3D, Dropout, Dense, MaxPooling2D, Flatten, Conv2D
+import tensorflow as tf
+from tensorflow.python.keras.utils.np_utils import to_categorical
+
+from training import record_sign
 from numpy import genfromtxt
 from constants import NUMBER_OF_KEYPOINTS
 import os
+
+from utils import convert_to_img_debug, convert_to_img
 
 
 #0 dobry
@@ -127,29 +131,41 @@ if __name__ == '__main__':
     #     plt.show()
     #     data = np.zeros((80, 80), dtype=np.uint8)
 
-    a = convert_to_img_debug()
-    for j in range(10):
-        xx = a[:, :, j].squeeze()
-        plt.imshow(xx, cmap='gray', vmin=0, vmax=1)
-        plt.show()
+    x_train, y_train = convert_to_img(6, "train")
+    x_trainn = tf.stack(x_train)
+    y_train = to_categorical(y_train)
+    opt = tf.keras.optimizers.SGD(learning_rate=0.0001)
+
+    s = 1
+    model = models.Sequential()
+    model.add(Conv2D(16, (5, 5), activation='relu', input_shape=(50, 50, 38)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Conv2D(16, (5, 5), activation='relu'))
+    model.add(Flatten())
+    model.add(Dense(16, activation='relu'))
+    model.add(Dense(6))
+    model.compile(optimizer=opt,
+                  loss="categorical_crossentropy",
+                  metrics=['accuracy'])
+
+    history = model.fit(x_trainn, y_train, epochs=30, batch_size=5)
+
+    # for j in range(10):
+    #     xx = x_train[0][:, :, j].squeeze()
+    #     xx = np.flip(xx, 1)
+    #     rescaled = (255.0 / xx.max() * (xx - xx.min())).astype(np.uint8)
+        # im = Image.fromarray(rescaled)
+        # im.save('test.png')
+        # cv2.imwrite(str(j) + ".png", rescaled)
+        # plt.imshow(xx, cmap='gray', vmin=0, vmax=1)
+        # plt.show()
 
 
 
-    x_tr, y_tr = convert_to_img_debug(5, "train")
-
-    arr = np.empty([80, 80, 39, 1], dtype='float64')
-    for i in x_tr:
-        i = np.expand_dims(i, axis=3)
-        arr = np.concatenate((arr, i), axis=3)
-        for j in range(10):
-            xx = i[:, :, j].squeeze()
-            plt.imshow(xx, cmap='gray', vmin=0, vmax=1)
-            plt.show()
 
 
 
 
-    print(x_tr[0][0])
     # x_tr, y_tr = load_data("train")
     # x_tst, y_tst = load_data("test")
     #
@@ -198,7 +214,7 @@ if __name__ == '__main__':
     # model.evaluate(x_test, y_test, verbose=1)
 
 
-    # record_sign(file_name="recording_5.csv")
+    # record_sign(file_name="TEST.csv")
     # record_sign(file_name="recording_5_test.csv")
 
     # generate_training_examples_from_recording("recording_5.csv", 5, 0, "train")

@@ -4,7 +4,7 @@ from point import Point
 from hand import Hand
 from tensorflow.python.keras.layers import LSTM, Dropout, Dense
 from tensorflow.python.keras.models import Sequential
-from keras.utils import to_categorical
+from tensorflow.python.keras.utils.np_utils import to_categorical
 from utils import get_hands_csv
 from utils import pad_sequence
 from utils import load_data
@@ -43,11 +43,11 @@ def record_sign(file_name):
 
     with mp_hands.Hands(
             model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5) as hands:
+            min_detection_confidence=0.75,
+            min_tracking_confidence=0.75) as hands:
         with mp_face_detection.FaceDetection(
                 model_selection=0,
-                min_detection_confidence=0.5) as face_detection:
+                min_detection_confidence=0.75) as face_detection:
             while cap.isOpened():
                 success, image = cap.read()
                 if not success:

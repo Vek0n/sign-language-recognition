@@ -43,31 +43,33 @@ def convert_to_img(number_of_classes, data_type):
         all_files = os.listdir("data/" + data_type + "/" + str(i))
 
         for file in all_files:
-            arr = np.empty([50, 50], dtype='float64')
+            arr = np.empty([30, 30], dtype='float64')
             file_np_array = genfromtxt("data/" + data_type + "/" + str(i) + "/" + str(file), delimiter=',',
                                        usecols=np.arange(0, NUMBER_OF_KEYPOINTS)).tolist()
             # X_train.append(file_np_array)
             j = 0
             while j < 114:
                 if (j + 1) % 3 != 0:
-                    data = np.zeros((50, 50), dtype=np.uint8)
+                    data = np.zeros((30, 30), dtype=np.uint8)
                     for e in file_np_array:
-                        x_pos = (int(e[j + 1] * 50)) + 25
-                        y_pos = (int(e[j] * 50)) + 25
+                        x_pos = (int(e[j + 1] * 30)) + 15
+                        y_pos = (int(e[j] * 30)) + 15
                         try:
-                            if x_pos >= 50:
-                                x_pos = 49
-                            if y_pos >= 50:
-                                y_pos = 49
+                            if x_pos >= 30:
+                                x_pos = 29
+                            if y_pos >= 30:
+                                y_pos = 29
                             data[x_pos, y_pos] = 1
                         except:
-                            print("Could not save point " + str((int(e[j + 1] * 50)) + 25) + ", " + str(
-                                int(e[j] * 50) + 25) + " for file: " + str(file))
+                            print("Could not save point " + str((int(e[j + 1] * 30)) + 15) + ", " + str(
+                                int(e[j] * 30) + 15) + " for file: " + str(file))
                             print("Could not save point " + str((e[j + 1])) + ", " + str(
                                 e[j]) + " for file: " + str(file))
 
-                    plt.imshow(data, cmap='gray', vmin=0, vmax=1)
-                    plt.show()
+                    # plt.imshow(data, cmap='gray', vmin=0, vmax=1)
+                    # plt.show()
+                    # print("Class: " + str(i) + ", " + str((e[j + 1])) + ", " + str(
+                    #             e[j]) + " for file: " + str(file))
                     arr = np.dstack((arr, data))
                     j = j + 2
                 else:

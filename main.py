@@ -134,21 +134,22 @@ if __name__ == '__main__':
     x_train, y_train = convert_to_img(6, "train")
     x_trainn = tf.stack(x_train)
     y_train = to_categorical(y_train)
+    y_trainn = tf.stack(y_train)
     opt = tf.keras.optimizers.SGD(learning_rate=0.0001)
 
     s = 1
     model = models.Sequential()
-    model.add(Conv2D(16, (5, 5), activation='relu', input_shape=(50, 50, 38)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Conv2D(16, (5, 5), activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu', input_shape=(30, 30, 38)))
+    # model.add(MaxPooling2D((2, 2)))
+    # model.add(Conv2D(16, (5, 5), activation='relu'))
     model.add(Flatten())
-    model.add(Dense(16, activation='relu'))
+    # model.add(Dense(16, activation='relu'))
     model.add(Dense(6))
     model.compile(optimizer=opt,
                   loss="categorical_crossentropy",
                   metrics=['accuracy'])
 
-    history = model.fit(x_trainn, y_train, epochs=30, batch_size=5)
+    history = model.fit(x_trainn, y_trainn, epochs=50, batch_size=10)
 
     # for j in range(10):
     #     xx = x_train[0][:, :, j].squeeze()

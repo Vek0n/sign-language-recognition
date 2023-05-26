@@ -5,7 +5,7 @@ from os import getcwd
 from matplotlib import pyplot as plt
 from PIL import Image
 from tensorflow.python.keras import models
-from tensorflow.python.keras.layers import Conv3D, Dropout, Dense, MaxPooling2D, Flatten, Conv2D
+from tensorflow.python.keras.layers import Conv3D, Dropout, Dense, MaxPooling2D, Flatten, Conv2D, Dense, Dropout, Conv1D, GlobalMaxPooling1D
 import tensorflow as tf
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
@@ -120,7 +120,75 @@ def load_temp_data():
     X_train.append(file_np_array)
     return X_train, np.array(Y_train, dtype='float64')
 
+def read_data(base_path):
+    X = []
+    y = []
+
+    for class_number in range(4):
+        class_path = os.path.join(base_path, str(class_number))
+        for file_name in os.listdir(class_path):
+            file_path = os.path.join(class_path, file_name)
+
+            with open(file_path, 'r') as file:
+                time_series = file.readline().strip().split(',')
+                time_series = [float(val) for val in time_series]
+                X.append(time_series)
+                y.append(class_number)
+
+    return np.array(X), np.array(y)
+
 if __name__ == '__main__':
+    X_train, y_train = read_data('data/train')
+    X_test, y_test = read_data('data/test')
+
+    # Reshape the data
+    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+
+    # Convert labels to categorical data
+    y_train = to_categorical(y_train, num_classes=16)
+    y_test = to_categorical(y_test, num_classes=16)
+
+    # Build the 1D-CNN model
+    model = models.Sequential()
+    model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(X_train.shape[1], 1)))
+    model.add(Conv1D(filters=32, kernel_size=3, activation='relu'))
+    model.add(GlobalMaxPooling1D())
+    model.add(Dropout(0.3))
+    model.add(Dense(16, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    # Train the model
+    model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=64, epochs=25)
+
+    # Evaluate the model
+    _, train_acc = model.evaluate(X_train, y_train, verbose=0)
+    _, test_acc = model.evaluate(X_test, y_test, verbose=0)
+
+    print("Training Accuracy: %.2f%%" % (train_acc * 100))
+    print("Test Accuracy: %.2f%%" % (test_acc * 100))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # data = np.zeros((80, 80), dtype=np.uint8)
     # x_tr, y_tr = load_data(5, "train")
     #
@@ -131,25 +199,25 @@ if __name__ == '__main__':
     #     plt.show()
     #     data = np.zeros((80, 80), dtype=np.uint8)
 
-    x_train, y_train = convert_to_img(6, "train")
-    x_trainn = tf.stack(x_train)
-    y_train = to_categorical(y_train)
-    y_trainn = tf.stack(y_train)
-    opt = tf.keras.optimizers.SGD(learning_rate=0.0001)
-
-    s = 1
-    model = models.Sequential()
-    model.add(Conv2D(64, (3, 3), activation='relu', input_shape=(30, 30, 38)))
-    # model.add(MaxPooling2D((2, 2)))
-    # model.add(Conv2D(16, (5, 5), activation='relu'))
-    model.add(Flatten())
-    # model.add(Dense(16, activation='relu'))
-    model.add(Dense(6))
-    model.compile(optimizer=opt,
-                  loss="categorical_crossentropy",
-                  metrics=['accuracy'])
-
-    history = model.fit(x_trainn, y_trainn, epochs=50, batch_size=10)
+    # x_train, y_train = convert_to_img(6, "train")
+    # x_trainn = tf.stack(x_train)
+    # y_train = to_categorical(y_train)
+    # y_trainn = tf.stack(y_train)
+    # opt = tf.keras.optimizers.SGD(learning_rate=0.0001)
+    #
+    # s = 1
+    # model = models.Sequential()
+    # model.add(Conv2D(64, (3, 3), activation='relu', input_shape=(30, 30, 38)))
+    # # model.add(MaxPooling2D((2, 2)))
+    # # model.add(Conv2D(16, (5, 5), activation='relu'))
+    # model.add(Flatten())
+    # # model.add(Dense(16, activation='relu'))
+    # model.add(Dense(6))
+    # model.compile(optimizer=opt,
+    #               loss="categorical_crossentropy",
+    #               metrics=['accuracy'])
+    #
+    # history = model.fit(x_trainn, y_trainn, epochs=50, batch_size=10)
 
     # for j in range(10):
     #     xx = x_train[0][:, :, j].squeeze()

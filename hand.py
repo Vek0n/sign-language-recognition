@@ -11,7 +11,6 @@ class Hand:
             new_hand_landmark_z = hand_landmarks.landmark[i].z
             self.hand_points.append(Point(new_hand_landmark_x, new_hand_landmark_y, new_hand_landmark_z))
 
-
     def print_hand(self):
         for i in self.hand_points:
             i.print_point()

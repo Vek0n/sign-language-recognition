@@ -48,12 +48,12 @@ def start(model):
     cap = cv2.VideoCapture(0)
 
     with mp_hands.Hands(
-            model_complexity=0,
-            min_detection_confidence=0.75,
-            min_tracking_confidence=0.75) as hands:
+            model_complexity=1,
+            min_detection_confidence=0.65,
+            min_tracking_confidence=0.65) as hands:
         with mp_face_detection.FaceDetection(
                 model_selection=0,
-                min_detection_confidence=0.5) as face_detection:
+                min_detection_confidence=0.90) as face_detection:
             while cap.isOpened():
                 if time.time() - last_prediction > 3:
                     prediction = ""

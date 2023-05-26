@@ -30,6 +30,26 @@ def load_data(number_of_classes, data_type):
     return X_train, np.array(Y_train, dtype='float64')
 
 
+import os
+
+
+def delete_short_files(directory):
+    # Iterate over all files in the directory
+    for filename in os.listdir(directory):
+        filepath = os.path.join(directory, filename)
+
+        # Check if the file is a regular file
+        if os.path.isfile(filepath):
+            # Open the file and count the number of lines
+            with open(filepath, 'r') as file:
+                num_lines = sum(1 for line in file)
+
+            # Delete the file if it has less than 10 lines
+            if num_lines > 50 or num_lines < 10:
+                os.remove(filepath)
+                print(f"{filename} deleted because it had less than 10 lines.")
+
+
 def pad_sequence(seq, maxlen):
     for j, s in enumerate(seq):
         for i in range(maxlen - len(seq[j])):

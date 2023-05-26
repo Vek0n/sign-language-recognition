@@ -1,11 +1,12 @@
 import cv2
+import os
 import mediapipe as mp
 from point import Point
 from hand import Hand
 from tensorflow.keras.layers import LSTM, Dropout, Dense
 from tensorflow.keras.models import Sequential
 from tensorflow.python.keras.utils.np_utils import to_categorical
-from utils import get_hands_csv
+from utils import get_hands_csv, delete_short_files
 from utils import pad_sequence
 from utils import load_data
 
@@ -24,7 +25,7 @@ def generate_training_examples_from_recording(recording_file_name, class_number,
         last_line_empty = True
         i = start
         for line in file2:
-            with open("data/"+ data_type + "/" + str(class_number) + "/" + str(i) + "_" + str(class_number) + ".txt", 'a') as file3:
+            with open("data/"+ data_type + "/" + str(class_number) + "/" + str(i) + "_" + str(class_number) + ".txt", 'a+') as file3:
                 if line.rstrip() == "":
                     end_of_file = True
                     if not last_line_empty:
@@ -38,16 +39,17 @@ def generate_training_examples_from_recording(recording_file_name, class_number,
                     last_line_empty = True
 
 
+
 def record_sign(file_name):
     cap = cv2.VideoCapture(0)
 
     with mp_hands.Hands(
             model_complexity=1,
-            min_detection_confidence=0.75,
-            min_tracking_confidence=0.75) as hands:
+            min_detection_confidence=0.65,
+            min_tracking_confidence=0.65) as hands:
         with mp_face_detection.FaceDetection(
                 model_selection=0,
-                min_detection_confidence=0.5) as face_detection:
+                min_detection_confidence=0.90) as face_detection:
             while cap.isOpened():
                 success, image = cap.read()
                 if not success:
@@ -101,10 +103,12 @@ def record_sign(file_name):
 
 def __train_model(trainX, trainY, testX, testY, epochs, batch_size, number_of_classes):
     model = Sequential()
-    model.add(LSTM(5, return_sequences=True,
+    model.add(LSTM(64, return_sequences=True,
                    input_shape=(SEQUENCE_PADDING, NUMBER_OF_KEYPOINTS)))
     model.add(Dropout(0.2))
-    model.add(LSTM(5))
+    model.add(LSTM(64, return_sequences=True))
+    model.add(Dropout(0.2))
+    model.add(LSTM(64))
     model.add(Dropout(0.2))
     model.add(Dense(number_of_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
